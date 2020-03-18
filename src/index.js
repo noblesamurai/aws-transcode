@@ -1,6 +1,6 @@
 const abind = require('abind');
 const AWS = require('aws-sdk');
-const debug = require('debug')('transcode');
+const debug = require('debug')('aws-transcode');
 const delay = require('delay');
 
 class AwsTranscoder {
@@ -50,7 +50,7 @@ class AwsTranscoder {
    */
   async maybeRemoveExistingOutputs (outputs) {
     return outputs.reduce(async (acc, output) => {
-      return await this.checkExists(output) ? acc : [...acc, output];
+      return (await this.checkExists(output)) ? acc : [...(await acc), output];
     }, []);
   }
 

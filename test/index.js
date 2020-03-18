@@ -112,7 +112,7 @@ describe('transcode', function () {
     expect(statusEvents).to.deep.equal([{ status: 'Progressing' }, { status: 'Progressing' }]);
   });
 
-  it('should check if the output exists already', async function () {
+  it('should return false if all outputs exist already', async function () {
     const createJob = sinon.stub();
     const headObject = sinon.stub().callsArgWith(1, undefined, 'HEADRESPONSE');
     AWSMock.mock('ElasticTranscoder', 'createJob', createJob);
@@ -120,14 +120,42 @@ describe('transcode', function () {
 
     const res = await transcode(
       inputKey,
-      [{ key: outputKey, presetId: 'PRESETID' }],
+      [{ key: outputKey, presetId: 'PRESETID' }, { key: 'another/video.mp4', presetId: 'PRESETID2' }],
       { checkExistsInBucket: 'BUCKET', pipelineId: 'PIPELINEID', pollInterval: 0, region: 'REGIONID' }
     );
-    expect(res).to.be.false(); // nothing transcoded.
+    expect(res).to.be.false(); // nothing transcoded
+    expect(createJob).not.to.have.been.called();
+  });
+
+  it('should transcode only the outputs that do not exist yet', async function () {
+    const headObject = sinon.stub()
+      .onCall(0).callsArgWith(1, new Error('not found')) // first asset not found
+      .onCall(1).callsArgWith(1, undefined, 'HEADRESPONSE'); // second on is (and should be removed).
+    const createJob = sinon.stub()
+      .callsArgWith(1, null, { Job: jobBase });
+    const readJob = sinon.stub()
+      .onCall(0).callsArgWith(1, null, { Job: { ...jobBase, ...jobProgressing } })
+      .onCall(1).callsArgWith(1, null, { Job: { ...jobBase, ...jobComplete } });
+    AWSMock.mock('ElasticTranscoder', 'createJob', createJob);
+    AWSMock.mock('ElasticTranscoder', 'readJob', readJob);
+    AWSMock.mock('S3', 'headObject', headObject);
+
+    const res = await transcode(
+      inputKey,
+      [{ key: outputKey, presetId: 'PRESETID' }, { key: 'another/video.mp4', presetId: 'PRESETID2' }],
+      { checkExistsInBucket: 'BUCKET', pipelineId: 'PIPELINEID', pollInterval: 0, region: 'REGIONID' }
+    );
+    expect(res).to.equal(123);
 
     // check aws functions were called with the right params
+    const expectedJobParams = {
+      Input: { Key: inputKey },
+      PipelineId: 'PIPELINEID',
+      Outputs: [{ Key: outputKey, PresetId: 'PRESETID' }]
+    };
     expect(headObject).to.have.been.called();
-    expect(createJob).not.to.have.been.calledOnce();
+    expect(createJob).to.have.been.calledWith(expectedJobParams).and.to.have.been.calledOnce();
+    expect(readJob).to.have.been.calledWith(jobBase).and.to.have.been.calledTwice();
   });
 
   it('should continue if the output does not exist', async function () {
@@ -143,7 +171,7 @@ describe('transcode', function () {
 
     const res = await transcode(
       inputKey,
-      [{ key: outputKey, presetId: 'PRESETID' }],
+      [{ key: outputKey, presetId: 'PRESETID' }, { key: 'another/video.mp4', presetId: 'PRESETID2' }],
       { checkExistsInBucket: 'BUCKET', pipelineId: 'PIPELINEID', pollInterval: 0, region: 'REGIONID' }
     );
     expect(res).to.equal(123);
@@ -152,7 +180,7 @@ describe('transcode', function () {
     const expectedJobParams = {
       Input: { Key: inputKey },
       PipelineId: 'PIPELINEID',
-      Outputs: [{ Key: outputKey, PresetId: 'PRESETID' }]
+      Outputs: [{ Key: outputKey, PresetId: 'PRESETID' }, { Key: 'another/video.mp4', PresetId: 'PRESETID2' }]
     };
     expect(headObject).to.have.been.called();
     expect(createJob).to.have.been.calledWith(expectedJobParams).and.to.have.been.calledOnce();
