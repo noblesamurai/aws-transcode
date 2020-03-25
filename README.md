@@ -1,6 +1,6 @@
 # aws-transcode
 
-> A simple promise based wrapper to make transciding with AWS simple.
+> A simple wrapper to transcoding with AWS elastic transcoder.
 
 ## Installation
 
