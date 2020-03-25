@@ -1,6 +1,6 @@
 {
   "name": "aws-transcode",
-  "version": "1.0.0-1",
+  "version": "1.0.0",
   "description": "A promise based wrapper to make transcoding with AWS easy.",
   "main": "src/index.js",
   "files": [
