@@ -27,7 +27,7 @@ const outputs = [
   }
 ];
 const config = {
-  checkExistsInBucket: 'OPTIONALY_CHECK_IN_THIS_BUCKET',
+  checkExistsInBucket: 'OPTIONALLY_CHECK_IN_THIS_BUCKET',
   onProgress: status => console.log(status),
   pipelineId: 'REPLACE_WITH_YOUR_PIPELINE_ID',
   pollInterval: 2000, // get status updates every 2 seconds
