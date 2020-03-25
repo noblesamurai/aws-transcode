@@ -7,7 +7,7 @@ class AwsTranscoder {
   /**
    * Constructor.
    *
-   * @param {string} config.checkExistsInBucket (optional) if set we will check if an output already
+   * @param {string} [config.checkExistsInBucket] if set we will check if an output already
    *   exists in the specified bucket. We need the bucket since it is built into the pipeline id and
    *   not available here.
    * @param {function} config.onProgress function to get very basic update events
