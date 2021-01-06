@@ -14,7 +14,7 @@ $ npm install aws-transcode
 
 ```js
 const transcode = require('aws-transcode');
-const key = 'input/video.mp4';
+const input = 'input/video.mp4';
 const outputs = [
   {
     key: 'output/video_1080p.mp4',
@@ -34,7 +34,7 @@ const config = {
   region: 'us-east-1'
 };
 
-const res = await transcode(key, outputs, config);
+const res = await transcode(input, outputs, config);
 
 if (res === false) {
   // res will be false if there was nothing to be transcoded (ie. no outputs were
@@ -42,6 +42,15 @@ if (res === false) {
 } else {
   // res will be the duration of the transcoded video in ms.
 }
+```
+
+### Extracting a part of the input file.
+
+The `input` can also be an object with a `key` (required) and `start`, `duration` values (optional).
+
+```js
+const input = { key: 'input/video.mp4', start: 5, duration: 10 };
+const res = await transcode(input, outputs, config);
 ```
 
 ## License

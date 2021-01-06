@@ -26,7 +26,10 @@ class AwsTranscoder {
   /**
    * Transcode a media file that has already been uploaded to s3.
    *
-   * @param {string} key
+   * @param {object} input
+   *   {string} key input key
+   *   {number} start optional defaults to 0
+   *   {number} duration optional defaults to duration of input file
    * @param {object[]} outputs an array of outputs { key, presetId, thumbnailPattern }
    *   {string} key output key (bucket is defined in the pipeline)
    *   {string} presetId aws transcoding preset to be used
@@ -35,11 +38,11 @@ class AwsTranscoder {
    *   transcoded video if successful
    * @throws Error
    */
-  async transcode (key, outputs) {
+  async transcode (input, outputs) {
     const filteredOutputs = await this.maybeRemoveExistingOutputs(outputs);
     if (!filteredOutputs.length) return false;
-    const jobId = await this.createTranscoderJob(key, filteredOutputs);
-    return this.waitForTranscoderJob(key, jobId);
+    const jobId = await this.createTranscoderJob(input, filteredOutputs);
+    return this.waitForTranscoderJob(input.key, jobId);
   }
 
   /**
@@ -81,10 +84,19 @@ class AwsTranscoder {
    *   {string} thumbnailPattern (optional) thumbnail pattern string
    * @return {string}
    */
-  async createTranscoderJob (key, outputs) {
+  async createTranscoderJob (input, outputs) {
+    const { key, start = 0, duration } = input;
     const { pipelineId } = this.config;
     const params = {
-      Input: { Key: key },
+      Input: {
+        Key: key,
+        ...((start > 0 || duration) && {
+          TimeSpan: {
+            ...(start > 0 && { StartTime: Number(start).toFixed(3) }),
+            ...(duration && { Duration: Number(duration).toFixed(3) })
+          }
+        })
+      },
       PipelineId: pipelineId,
       Outputs: outputs.map(({ key, presetId, thumbnailPattern }) => ({
         Key: key,
@@ -146,9 +158,12 @@ class AwsTranscoder {
   }
 }
 
-async function transcode (key, outputs, config) {
+async function transcode (input, outputs, config) {
+  if (typeof input === 'string') {
+    input = { key: input };
+  }
   const transcoder = new AwsTranscoder(config);
-  return transcoder.transcode(key, outputs);
+  return transcoder.transcode(input, outputs);
 }
 
 module.exports = transcode;

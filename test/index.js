@@ -212,4 +212,82 @@ describe('transcode', function () {
     expect(createJob).to.have.been.calledWith(expectedJobParams).and.to.have.been.calledOnce();
     expect(readJob).to.have.been.calledWith(jobBase).and.to.have.been.calledTwice();
   });
+
+  it('should request with time span', async function () {
+    const createJob = sinon.stub()
+      .callsArgWith(1, null, { Job: jobBase });
+    const readJob = sinon.stub()
+      .onCall(0).callsArgWith(1, null, { Job: { ...jobBase, ...jobProgressing } })
+      .onCall(1).callsArgWith(1, null, { Job: { ...jobBase, ...jobComplete } });
+    AWSMock.mock('ElasticTranscoder', 'createJob', createJob);
+    AWSMock.mock('ElasticTranscoder', 'readJob', readJob);
+
+    const res = await transcode(
+      { key: inputKey, start: 5.123999, duration: 12.987666 },
+      [{ key: outputKey, presetId: 'PRESETID' }],
+      { pipelineId: 'PIPELINEID', pollInterval: 0, region: 'REGIONID' }
+    );
+    expect(res).to.equal(123);
+
+    // check aws functions were called with the right params
+    const expectedJobParams = {
+      Input: { Key: inputKey, TimeSpan: { StartTime: '5.124', Duration: '12.988' } },
+      PipelineId: 'PIPELINEID',
+      Outputs: [{ Key: outputKey, PresetId: 'PRESETID' }]
+    };
+    expect(createJob).to.have.been.calledWith(expectedJobParams).and.to.have.been.calledOnce();
+    expect(readJob).to.have.been.calledWith(jobBase).and.to.have.been.calledTwice();
+  });
+
+  it('should request with just a start time', async function () {
+    const createJob = sinon.stub()
+      .callsArgWith(1, null, { Job: jobBase });
+    const readJob = sinon.stub()
+      .onCall(0).callsArgWith(1, null, { Job: { ...jobBase, ...jobProgressing } })
+      .onCall(1).callsArgWith(1, null, { Job: { ...jobBase, ...jobComplete } });
+    AWSMock.mock('ElasticTranscoder', 'createJob', createJob);
+    AWSMock.mock('ElasticTranscoder', 'readJob', readJob);
+
+    const res = await transcode(
+      { key: inputKey, duration: 12.987666 },
+      [{ key: outputKey, presetId: 'PRESETID' }],
+      { pipelineId: 'PIPELINEID', pollInterval: 0, region: 'REGIONID' }
+    );
+    expect(res).to.equal(123);
+
+    // check aws functions were called with the right params
+    const expectedJobParams = {
+      Input: { Key: inputKey, TimeSpan: { Duration: '12.988' } },
+      PipelineId: 'PIPELINEID',
+      Outputs: [{ Key: outputKey, PresetId: 'PRESETID' }]
+    };
+    expect(createJob).to.have.been.calledWith(expectedJobParams).and.to.have.been.calledOnce();
+    expect(readJob).to.have.been.calledWith(jobBase).and.to.have.been.calledTwice();
+  });
+
+  it('should request with just a duration', async function () {
+    const createJob = sinon.stub()
+      .callsArgWith(1, null, { Job: jobBase });
+    const readJob = sinon.stub()
+      .onCall(0).callsArgWith(1, null, { Job: { ...jobBase, ...jobProgressing } })
+      .onCall(1).callsArgWith(1, null, { Job: { ...jobBase, ...jobComplete } });
+    AWSMock.mock('ElasticTranscoder', 'createJob', createJob);
+    AWSMock.mock('ElasticTranscoder', 'readJob', readJob);
+
+    const res = await transcode(
+      { key: inputKey, start: 5.123999 },
+      [{ key: outputKey, presetId: 'PRESETID' }],
+      { pipelineId: 'PIPELINEID', pollInterval: 0, region: 'REGIONID' }
+    );
+    expect(res).to.equal(123);
+
+    // check aws functions were called with the right params
+    const expectedJobParams = {
+      Input: { Key: inputKey, TimeSpan: { StartTime: '5.124' } },
+      PipelineId: 'PIPELINEID',
+      Outputs: [{ Key: outputKey, PresetId: 'PRESETID' }]
+    };
+    expect(createJob).to.have.been.calledWith(expectedJobParams).and.to.have.been.calledOnce();
+    expect(readJob).to.have.been.calledWith(jobBase).and.to.have.been.calledTwice();
+  });
 });
