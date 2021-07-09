@@ -2,11 +2,19 @@
 
 > A simple wrapper to transcoding with AWS elastic transcoder.
 
+
+## Prerequisites
+
+```
+$ pip install pre-commit
+```
+
 ## Installation
 
 This module is installed via npm:
 
 ``` bash
+$ pre-commit install --install-hooks
 $ npm install aws-transcode
 ```
 
